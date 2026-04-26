@@ -588,6 +588,10 @@
 
       <div class="section-title">今日の復習タスク</div>
       <div id="todayTasks"></div>
+
+      <div class="section-title" style="margin-top:20px">自習記録</div>
+      <div class="class-list" id="selfStudyList"></div>
+      <button class="btn btn-secondary" onclick="openSelfStudyModal()" style="margin-top:8px">＋ 自習を記録する</button>
     </div>
 
     <!-- CALENDAR TAB -->
@@ -598,7 +602,8 @@
     <!-- TASKS TAB -->
     <div id="tab-tasks" class="hidden">
       <div class="today-header">
-        <h2>復習タスク一覧</h2>
+        <h2>今日のタスク</h2>
+        <button class="cal-nav-btn" onclick="openTodoModal(todayStr())" style="font-size:11px">＋ 追加</button>
       </div>
       <div id="allTasks"></div>
     </div>
@@ -676,6 +681,41 @@
     </div>
     <button class="btn btn-primary" onclick="saveTodo()" style="margin-top:8px">追加する</button>
     <button class="btn btn-secondary" onclick="closeTodoModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- SELF STUDY MODAL -->
+<div class="modal-overlay" id="selfStudyModalOverlay" onclick="closeSelfStudyModalOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">自習を記録</div>
+    <div id="selfStudyMsg"></div>
+
+    <label class="form-label">内容（参考書名・問題集など）</label>
+    <input type="text" id="selfStudyContent" placeholder="例：チャート式 数学II 第3章" style="margin-bottom:14px">
+
+    <label class="form-label">メモ（わからなかったことなど）</label>
+    <textarea id="selfStudyMemo" placeholder="例：極限の計算で詰まった" style="margin-bottom:14px"></textarea>
+
+    <label class="form-label">復習パターン</label>
+    <div class="option-group" id="selfStudyPatternGroup">
+      <button class="option-btn selected green" onclick="selectSelfStudyPattern('不要', this)">✓ 復習不要</button>
+      <button class="option-btn" onclick="selectSelfStudyPattern('翌日', this)">翌日</button>
+      <button class="option-btn" onclick="selectSelfStudyPattern('3日後', this)">3日後</button>
+      <button class="option-btn" onclick="selectSelfStudyPattern('1週間後', this)">1週間後</button>
+    </div>
+
+    <label class="form-label">予想復習時間</label>
+    <div class="time-options" id="selfStudyTimeGroup">
+      <button class="option-btn" onclick="selectSelfStudyTime(0, this)">不要</button>
+      <button class="option-btn" onclick="selectSelfStudyTime(10, this)">10分</button>
+      <button class="option-btn selected" onclick="selectSelfStudyTime(15, this)">15分</button>
+      <button class="option-btn" onclick="selectSelfStudyTime(20, this)">20分</button>
+      <button class="option-btn" onclick="selectSelfStudyTime(30, this)">30分</button>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveSelfStudy()" style="margin-top:8px">記録する</button>
+    <button class="btn btn-secondary" onclick="closeSelfStudyModal()">キャンセル</button>
   </div>
 </div>
 
@@ -762,12 +802,102 @@ let selectedTime = 15;
 let loggedToday = JSON.parse(localStorage.getItem('fukushu_logged') || '[]');
 
 // ===== INIT =====
+// ===== NOTION SYNC =====
+const PROXY = 'https://notion-proxy.ksuzuki-01mail.workers.dev/notion/v1';
+
+async function notionRequest(path, method='GET', body=null) {
+  if (!settings.apiKey) return null;
+  try {
+    const res = await fetch(PROXY + path, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${settings.apiKey}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28'
+      },
+      body: body ? JSON.stringify(body) : null
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch(e) { return null; }
+}
+
+async function syncTasksFromNotion() {
+  if (!settings.apiKey || !settings.taskDbId) return;
+  const data = await notionRequest(`/databases/${settings.taskDbId}/query`, 'POST', {
+    filter: { property: 'ステータス', select: { equals: '未完' } },
+    page_size: 100
+  });
+  if (!data) return;
+
+  const notionTasks = data.results.map(page => ({
+    id: page.id,
+    notionId: page.id,
+    subject: page.properties['科目名']?.title?.[0]?.text?.content || '',
+    type: page.properties['タスク種別']?.select?.name || '白紙再現',
+    date: page.properties['予定日']?.date?.start || todayStr(),
+    status: page.properties['ステータス']?.select?.name || '未完',
+    estimatedMin: page.properties['予想時間']?.number || null,
+    isPrep: page.properties['予習フラグ']?.checkbox || false,
+    isSelfStudy: page.properties['自習フラグ']?.checkbox || false,
+  }));
+
+  // ローカルのNotionIDなしタスク（ローカル生成分）を保持
+  const localTasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
+  const localOnly = localTasks.filter(t => !t.notionId);
+  const merged = [...notionTasks, ...localOnly];
+  localStorage.setItem('fukushu_tasks', JSON.stringify(merged));
+}
+
+async function addTaskToNotion(task) {
+  if (!settings.apiKey || !settings.taskDbId) return null;
+  const data = await notionRequest('/pages', 'POST', {
+    parent: { database_id: settings.taskDbId },
+    properties: {
+      '科目名': { title: [{ text: { content: task.subject } }] },
+      'タスク種別': { select: { name: task.type } },
+      '予定日': { date: { start: task.date } },
+      'ステータス': { select: { name: task.status } },
+      '予想時間': { number: task.estimatedMin || 0 },
+      '予習フラグ': { checkbox: task.isPrep || false },
+      '自習フラグ': { checkbox: task.isSelfStudy || false },
+    }
+  });
+  return data?.id || null;
+}
+
+async function updateTaskInNotion(notionId, status) {
+  if (!settings.apiKey || !notionId) return;
+  await notionRequest(`/pages/${notionId}`, 'PATCH', {
+    properties: {
+      'ステータス': { select: { name: status } }
+    }
+  });
+}
+
+async function addTasksToNotion(tasks) {
+  // 複数タスクをNotionに追加してnotionIdを返す
+  const results = [];
+  for (const task of tasks) {
+    const notionId = await addTaskToNotion(task);
+    results.push({ ...task, notionId: notionId || null });
+  }
+  return results;
+}
+
 function init() {
   slideOverdueTasks();
   ensurePrepTasksSaved();
   updateHeader();
   renderToday();
   checkConnection();
+  // Notionから最新タスクを取得して再描画
+  if (settings.apiKey && settings.taskDbId) {
+    syncTasksFromNotion().then(() => {
+      slideOverdueTasks();
+      renderToday();
+    });
+  }
 }
 
 function slideOverdueTasks() {
@@ -817,6 +947,7 @@ function renderToday() {
   }
 
   renderTodayTasks();
+  renderSelfStudyList();
 }
 
 function getNextSchoolDay(base) {
@@ -852,13 +983,14 @@ function getTomorrowPrep() {
 function renderTodayTasks() {
   const container = document.getElementById('todayTasks');
   const today = selectedDate || todayStr();
-  const reviewTasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]')
+  const allTodayTasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]')
     .filter(t => t.date === today && t.status === '未完');
-  const prepTasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]')
-    .filter(t => t.date === today && t.isPrep);
-  const tasks = [...reviewTasks, ...prepTasks];
 
-  if (tasks.length === 0) {
+  // 復習タスク（予習でないもの）と予習タスクを分離
+  const reviewTasks = allTodayTasks.filter(t => !t.isPrep);
+  const prepTasks = allTodayTasks.filter(t => t.isPrep);
+
+  if (allTodayTasks.length === 0) {
     container.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px 0">今日のタスクはありません</div>';
     return;
   }
@@ -867,7 +999,7 @@ function renderTodayTasks() {
     <div class="section-title" style="margin-bottom:6px">復習</div>
     ${reviewTasks.map(t => `
       <div class="task-item">
-        <div class="task-check" onclick="completeTask('${t.id}', this)"></div>
+        <div class="task-check" onclick="completeTaskSimple('${t.id}')"></div>
         <div class="task-info">
           <div class="task-subject">${t.subject}</div>
           <div class="task-meta">
@@ -882,12 +1014,11 @@ function renderTodayTasks() {
     <div class="section-title" style="margin-top:12px;margin-bottom:6px">明日の予習</div>
     ${prepTasks.map(t => `
       <div class="task-item" style="border-color:rgba(247,162,111,0.3)">
-        <div class="task-check" style="border-color:var(--accent2)"></div>
+        <div class="task-check" onclick="completeTaskSimple('${t.id}')" style="border-color:var(--accent2)"></div>
         <div class="task-info">
           <div class="task-subject">${t.subject}</div>
           <div class="task-meta">
             <span class="task-tag tag-audio">${t.type}</span>
-            <span>${t.estimatedMin}分</span>
           </div>
         </div>
       </div>
@@ -947,7 +1078,7 @@ async function saveLog() {
   btn.innerHTML = '<span class="loading"></span>';
 
   // Save locally
-  saveTasksLocally();
+  await saveTasksLocally();
 
   // Save to Notion if connected
   if (settings.apiKey && settings.logDbId) {
@@ -996,7 +1127,7 @@ async function saveLog() {
   }, 1200);
 }
 
-function saveTasksLocally() {
+async function saveTasksLocally() {
   const tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
   const now = new Date();
 
@@ -1007,17 +1138,16 @@ function saveTasksLocally() {
 
   const skipWeekend = (date) => {
     const d = new Date(date);
-    while (d.getDay() === 0 || d.getDay() === 6) {
-      d.setDate(d.getDate() + 1);
-    }
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
     return d;
   };
 
+  const newTasks = [];
   const addTask = (daysLater, type) => {
     const d = new Date(now);
     d.setDate(d.getDate() + daysLater);
     const finalDate = skipWeekend(d);
-    tasks.push({
+    newTasks.push({
       id: `${Date.now()}_${Math.random()}`,
       subject: currentClass.name,
       type,
@@ -1028,33 +1158,25 @@ function saveTasksLocally() {
     });
   };
 
-  // 科目ごとの復習タイプ設定
   const name = currentClass.name;
-  // 音読のみ（白紙再現なし）
   const onlyAudio = ['英文法S1', '英文法S2', '英語構文HA', '英文読解H', '和文英訳H'].includes(name);
-  // 白紙再現のみ（音読なし）
   const onlyHakushi = ['共テ現代文'].includes(name);
-  // 数理系は音読なし
   const classType = TIMETABLE[now.getDay()]?.[currentClass.idx]?.type || 'math';
   const isMath = classType === 'math';
 
-  // 音読タスク：onlyAudio or (語学系 and 白紙再現専用科目でない and 数理系でない)
   if (onlyAudio || (!onlyHakushi && !isMath)) {
     addTask(0, '音読');
     addTask(1, '音読');
     addTask(7, '音読');
   }
-
-  // 白紙再現タスク：音読専用科目以外
   if (!onlyAudio) {
-    if (selectedPattern === '3日後') {
-      addTask(3, '白紙再現');
-    } else if (selectedPattern === '要注意') {
-      addTask(1, '白紙再現');
-      addTask(7, '白紙再現');
-    }
+    if (selectedPattern === '3日後') addTask(3, '白紙再現');
+    else if (selectedPattern === '要注意') { addTask(1, '白紙再現'); addTask(7, '白紙再現'); }
   }
 
+  // Notionに同期
+  const synced = await addTasksToNotion(newTasks);
+  tasks.push(...synced);
   localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
 }
 
@@ -1067,9 +1189,17 @@ function ensurePrepTasksSaved() {
   if (alreadyHasPrep) return;
 
   const noPrep = ['情報', 'LHR'];
-  const baseDate = new Date();
-  const nextDay = getNextSchoolDay(baseDate);
-  const nextDow = nextDay.getDay();
+
+  // 今日の曜日から次の授業日（翌平日）を安全に計算
+  const now = new Date();
+  const todayDow = now.getDay();
+  let daysAhead = 1;
+  let nextDow = (todayDow + daysAhead) % 7;
+  while (nextDow === 0 || nextDow === 6) {
+    daysAhead++;
+    nextDow = (todayDow + daysAhead) % 7;
+  }
+
   const classes = TIMETABLE[nextDow] || [];
 
   classes.filter(c => !noPrep.includes(c.name)).forEach(c => {
@@ -1129,12 +1259,10 @@ function renderAllTasks() {
     (done.length ? `<div class="section-title" style="margin-top:16px">完了済み</div>` + done.map(renderTask).join('') : '');
 }
 
-function completeTaskSimple(id) {
+async function completeTaskSimple(id) {
   const tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
   const task = tasks.find(t => t.id === id);
   if (!task) return;
-  // 予習・TODOはシンプルにトグル
-  // 復習タスク（白紙再現・音読）は結果ボタンからのみ完了可
   if (!task.isPrep && (task.type === '白紙再現' || task.type === '音読')) {
     openTaskStatus(id);
     return;
@@ -1143,34 +1271,38 @@ function completeTaskSimple(id) {
   const idx = tasks.findIndex(t => t.id === id);
   tasks[idx] = task;
   localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
+  if (task.notionId) await updateTaskInNotion(task.notionId, task.status);
   renderAllTasks();
+  renderTodayTasks();
 }
 
-function openTaskStatus(id) {
+async function openTaskStatus(id) {
   const tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
   const task = tasks.find(t => t.id === id);
   if (!task) return;
 
   const status = prompt(`「${task.subject}」の結果は？\n\n1: 完遂\n2: 要復習（翌日→1週間後）\n3: わからない（翌日→1週間後）\n\n番号を入力:`);
+  if (!status) return;
 
+  const newTasks = [];
   if (status === '1') {
     task.status = '完遂';
-  } else if (status === '2') {
-    task.status = '要復習';
+  } else if (status === '2' || status === '3') {
+    task.status = status === '2' ? '要復習' : 'わからない';
     const d1 = new Date(task.date); d1.setDate(d1.getDate() + 1);
     const d2 = new Date(task.date); d2.setDate(d2.getDate() + 7);
-    tasks.push({ ...task, id: Date.now() + '_1', date: dateToStr(d1), status: '未完' });
-    tasks.push({ ...task, id: Date.now() + '_2', date: dateToStr(d2), status: '未完' });
-  } else if (status === '3') {
-    task.status = 'わからない';
-    const d1 = new Date(task.date); d1.setDate(d1.getDate() + 1);
-    const d2 = new Date(task.date); d2.setDate(d2.getDate() + 7);
-    tasks.push({ ...task, id: Date.now() + '_1', date: dateToStr(d1), status: '未完' });
-    tasks.push({ ...task, id: Date.now() + '_2', date: dateToStr(d2), status: '未完' });
+    newTasks.push({ ...task, id: `${Date.now()}_1`, notionId: null, date: dateToStr(d1), status: '未完' });
+    newTasks.push({ ...task, id: `${Date.now()}_2`, notionId: null, date: dateToStr(d2), status: '未完' });
   } else return;
 
   const idx = tasks.findIndex(t => t.id === id);
   tasks[idx] = task;
+
+  // Notion同期
+  if (task.notionId) await updateTaskInNotion(task.notionId, task.status);
+  const synced = await addTasksToNotion(newTasks);
+  tasks.push(...synced);
+
   localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
   renderAllTasks();
   renderTodayTasks();
@@ -1239,28 +1371,27 @@ function renderCalendar() {
     tasksByDate[t.date].push(t);
   });
 
-  // 予習タスクも追加（今月・来月分）
-  for (let dow = 0; dow <= 6; dow++) {
-    const d = new Date(calYear, calMonth, 1);
-    while (d.getMonth() === calMonth) {
-      if (d.getDay() === dow) {
-        const nextDay = new Date(d);
-        nextDay.setDate(nextDay.getDate() + 1);
-        while (nextDay.getDay() === 0 || nextDay.getDay() === 6) nextDay.setDate(nextDay.getDate() + 1);
-        const nextDow = nextDay.getDay();
-        const classes = TIMETABLE[nextDow] || [];
-        const noPrep = ['情報', 'LHR'];
-        const prepDate = dateToStr(d);
-        classes.filter(c => !noPrep.includes(c.name)).forEach(c => {
-          if (!tasksByDate[prepDate]) tasksByDate[prepDate] = [];
-          // 重複防止
-          if (!tasksByDate[prepDate].find(t => t.subject === c.name && t.type === '予習')) {
-            tasksByDate[prepDate].push({ subject: c.name, type: '予習', status: '未完', isPrep: true });
-          }
-        });
-      }
-      d.setDate(d.getDate() + 1);
+  // 予習タスクも追加（今月分・平日のみ）
+  const noPrep = ['情報', 'LHR'];
+  const d = new Date(calYear, calMonth, 1);
+  while (d.getMonth() === calMonth) {
+    const dow = d.getDay();
+    // 土日はスキップ
+    if (dow !== 0 && dow !== 6) {
+      const nextDay = new Date(d);
+      nextDay.setDate(nextDay.getDate() + 1);
+      while (nextDay.getDay() === 0 || nextDay.getDay() === 6) nextDay.setDate(nextDay.getDate() + 1);
+      const nextDow = nextDay.getDay();
+      const classes = TIMETABLE[nextDow] || [];
+      const prepDate = dateToStr(d);
+      classes.filter(c => !noPrep.includes(c.name)).forEach(c => {
+        if (!tasksByDate[prepDate]) tasksByDate[prepDate] = [];
+        if (!tasksByDate[prepDate].find(t => t.subject === c.name && t.type === '予習')) {
+          tasksByDate[prepDate].push({ subject: c.name, type: '予習', status: '未完', isPrep: true });
+        }
+      });
     }
+    d.setDate(d.getDate() + 1);
   }
 
   const firstDay = new Date(calYear, calMonth, 1);
@@ -1397,6 +1528,124 @@ function showTab(tab) {
   if (tab === 'calendar') renderCalendar();
 }
 
+// ===== SELF STUDY =====
+let selfStudyPattern = '不要';
+let selfStudyTime = 15;
+
+function openSelfStudyModal() {
+  selfStudyPattern = '不要';
+  selfStudyTime = 15;
+  document.getElementById('selfStudyContent').value = '';
+  document.getElementById('selfStudyMemo').value = '';
+  document.getElementById('selfStudyMsg').innerHTML = '';
+  document.querySelectorAll('#selfStudyPatternGroup .option-btn').forEach((b,i) => {
+    b.className = 'option-btn' + (i===0 ? ' selected green' : '');
+  });
+  document.querySelectorAll('#selfStudyTimeGroup .option-btn').forEach((b,i) => {
+    b.className = 'option-btn' + (i===2 ? ' selected' : '');
+  });
+  document.getElementById('selfStudyModalOverlay').classList.add('open');
+}
+
+function closeSelfStudyModal() {
+  document.getElementById('selfStudyModalOverlay').classList.remove('open');
+}
+
+function closeSelfStudyModalOutside(e) {
+  if (e.target === document.getElementById('selfStudyModalOverlay')) closeSelfStudyModal();
+}
+
+function selectSelfStudyPattern(val, btn) {
+  selfStudyPattern = val;
+  document.querySelectorAll('#selfStudyPatternGroup .option-btn').forEach(b => b.className = 'option-btn');
+  btn.className = 'option-btn selected ' + (val === '不要' ? 'green' : val === '要注意' ? 'orange' : '');
+}
+
+function selectSelfStudyTime(val, btn) {
+  selfStudyTime = val;
+  document.querySelectorAll('#selfStudyTimeGroup .option-btn').forEach(b => b.className = 'option-btn');
+  btn.className = 'option-btn selected';
+}
+
+async function saveSelfStudy() {
+  const content = document.getElementById('selfStudyContent').value.trim();
+  if (!content) {
+    document.getElementById('selfStudyMsg').innerHTML = '<div class="msg msg-error">内容を入力してください</div>';
+    return;
+  }
+  const memo = document.getElementById('selfStudyMemo').value.trim();
+  const today = todayStr();
+  const tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
+  const selfStudyLogs = JSON.parse(localStorage.getItem('fukushu_selfstudy') || '[]');
+
+  // 自習ログに記録
+  selfStudyLogs.push({
+    id: `ss_${Date.now()}`,
+    content,
+    memo,
+    date: today,
+    pattern: selfStudyPattern,
+    estimatedMin: selfStudyTime,
+  });
+  localStorage.setItem('fukushu_selfstudy', JSON.stringify(selfStudyLogs));
+
+  // 復習タスクを生成
+  if (selfStudyPattern !== '不要') {
+    const skipWeekend = (d) => {
+      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+      return d;
+    };
+    const addTask = (daysLater) => {
+      const d = new Date();
+      d.setDate(d.getDate() + daysLater);
+      skipWeekend(d);
+      tasks.push({
+        id: `ss_review_${Date.now()}_${Math.random()}`,
+        subject: content,
+        type: '白紙再現',
+        date: dateToStr(d),
+        status: '未完',
+        estimatedMin: selfStudyTime,
+        isSelfStudy: true,
+      });
+    };
+    if (selfStudyPattern === '翌日') {
+      addTask(1);
+    } else if (selfStudyPattern === '3日後') {
+      addTask(3);
+    } else if (selfStudyPattern === '1週間後') {
+      addTask(7);
+    }
+    localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
+  }
+
+  closeSelfStudyModal();
+  renderSelfStudyList();
+}
+
+function renderSelfStudyList() {
+  const today = todayStr();
+  const logs = JSON.parse(localStorage.getItem('fukushu_selfstudy') || '[]')
+    .filter(s => s.date === today);
+  const container = document.getElementById('selfStudyList');
+  if (!container) return;
+
+  if (logs.length === 0) {
+    container.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:4px 0">まだ記録なし</div>';
+    return;
+  }
+
+  container.innerHTML = logs.map(s => `
+    <div class="class-item" style="cursor:default">
+      <div style="flex:1">
+        <div class="class-name">${s.content}</div>
+        ${s.memo ? `<div style="font-size:11px;color:var(--text2);margin-top:3px">${s.memo}</div>` : ''}
+      </div>
+      <div class="class-type ${s.pattern === '不要' ? '' : 'math'}">${s.pattern}</div>
+    </div>
+  `).join('');
+}
+
 // ===== DATE PICKER =====
 let selectedDate = null;
 let selectedTodoType = '白紙再現';
@@ -1449,22 +1698,25 @@ function selectTodoType(val, btn) {
   btn.className = 'option-btn selected';
 }
 
-function saveTodo() {
+async function saveTodo() {
   const content = document.getElementById('todoContent').value.trim();
   if (!content) { document.getElementById('todoModalMsg').innerHTML = '<div class="msg msg-error">内容を入力してください</div>'; return; }
   const tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
-  tasks.push({
+  const newTask = {
     id: `todo_${Date.now()}_${Math.random()}`,
     subject: content,
     type: selectedTodoType,
     date: todoTargetDate,
     status: '未完',
     estimatedMin: null,
-  });
+  };
+  const notionId = await addTaskToNotion(newTask);
+  tasks.push({ ...newTask, notionId: notionId || null });
   localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
   closeTodoModal();
   renderCalendar();
   showDayTasks(todoTargetDate);
+  renderAllTasks();
 }
 
 // ===== UTILS =====
