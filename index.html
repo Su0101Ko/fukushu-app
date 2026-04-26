@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>復習マネージャー</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
 
   :root {
-    --bg: #0f0f13;
-    --surface: #1a1a22;
-    --surface2: #22222e;
-    --border: #2e2e3e;
-    --accent: #7c6ff7;
-    --accent2: #f7a26f;
-    --accent3: #6ff7c4;
-    --text: #e8e8f0;
-    --text2: #8888aa;
-    --danger: #f76f6f;
-    --success: #6ff7a2;
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface2: #f0f2f5;
+    --border: #e4e8ee;
+    --accent: #4a90d9;
+    --accent2: #e8855a;
+    --accent3: #4ab89a;
+    --text: #2c3142;
+    --text2: #8a93a8;
+    --danger: #d95f5f;
+    --success: #4ab87a;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,12 +37,13 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background: var(--bg);
   }
 
   header {
-    padding: 20px 20px 12px;
+    padding: 18px 20px 12px;
     border-bottom: 1px solid var(--border);
-    background: var(--bg);
+    background: var(--surface);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -56,17 +57,16 @@
   }
 
   .logo {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 700;
     color: var(--accent);
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
   }
 
   .date-display {
-    font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     color: var(--text2);
+    font-weight: 400;
   }
 
   .api-status {
@@ -86,37 +86,63 @@
 
   .status-dot.connected { background: var(--success); }
 
-  nav {
+  #bottomNav {
     display: flex;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-    position: sticky;
-    top: 73px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
     z-index: 99;
+    transition: transform 0.3s ease;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  nav button {
+  #bottomNav.hidden-nav {
+    transform: translateX(-50%) translateY(100%);
+  }
+
+  #bottomNav button {
     flex: 1;
-    padding: 12px 8px;
+    padding: 10px 8px 12px;
     background: none;
     border: none;
     color: var(--text2);
     font-family: 'Noto Sans JP', sans-serif;
-    font-size: 12px;
+    font-size: 10px;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.15s;
   }
 
-  nav button.active {
+  #bottomNav button svg {
+    width: 22px;
+    height: 22px;
+    transition: all 0.15s;
+  }
+
+  #bottomNav button.active {
     color: var(--accent);
-    border-bottom-color: var(--accent);
   }
 
-  .content { flex: 1; padding: 16px; overflow-y: auto; }
+  #bottomNav button.active svg {
+    stroke: var(--accent);
+  }
+
+  .content {
+    padding-bottom: 72px;
+  }
+
+  .content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 80px; }
 
   /* SETUP SCREEN */
-  .setup-screen { display: flex; flex-direction: column; gap: 16px; }
+  .setup-screen { display: flex; flex-direction: column; gap: 14px; }
 
   .setup-card {
     background: var(--surface);
@@ -129,15 +155,15 @@
     font-size: 13px;
     font-weight: 500;
     margin-bottom: 12px;
-    color: var(--accent2);
+    color: var(--text);
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
   .step-badge {
-    background: var(--accent2);
-    color: var(--bg);
+    background: var(--accent);
+    color: white;
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -156,6 +182,7 @@
     font-size: 11px;
     color: var(--text2);
     margin-bottom: 4px;
+    font-weight: 500;
   }
 
   input[type="text"], input[type="password"] {
@@ -165,24 +192,23 @@
     border-radius: 8px;
     padding: 10px 12px;
     color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-size: 13px;
     outline: none;
     transition: border-color 0.2s;
   }
 
-  input:focus { border-color: var(--accent); }
+  input:focus { border-color: var(--accent); background: white; }
 
   .btn {
     width: 100%;
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     border: none;
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
   }
 
   .btn-primary {
@@ -190,18 +216,20 @@
     color: white;
   }
 
-  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:hover { background: #3a7bc8; }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .btn-secondary {
     background: var(--surface2);
-    color: var(--text);
+    color: var(--text2);
     border: 1px solid var(--border);
     margin-top: 8px;
   }
 
+  .btn-secondary:hover { background: var(--border); }
+
   .info-box {
-    background: var(--surface2);
+    background: #eef5fc;
     border-left: 3px solid var(--accent);
     border-radius: 0 8px 8px 0;
     padding: 10px 12px;
@@ -215,31 +243,29 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
-  .today-header h2 { font-size: 15px; font-weight: 500; }
+  .today-header h2 { font-size: 15px; font-weight: 600; color: var(--text); }
 
-  .class-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .class-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
 
   .class-item {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 12px 14px;
+    padding: 11px 14px;
     display: flex;
     align-items: center;
     gap: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
   }
 
-  .class-item:hover { border-color: var(--accent); }
-
-  .class-item.logged { border-color: var(--success); opacity: 0.6; }
+  .class-item:hover { border-color: var(--accent); background: #f0f6fd; }
+  .class-item.logged { border-color: var(--success); background: #f0faf5; opacity: 0.7; }
 
   .time-tag {
-    font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
     color: var(--text2);
     min-width: 80px;
@@ -253,25 +279,27 @@
     border-radius: 20px;
     background: var(--surface2);
     color: var(--text2);
+    font-weight: 500;
   }
 
-  .class-type.math { background: rgba(124,111,247,0.15); color: var(--accent); }
-  .class-type.lang { background: rgba(247,162,111,0.15); color: var(--accent2); }
-  .class-type.sci { background: rgba(111,247,196,0.15); color: var(--accent3); }
+  .class-type.math { background: #eef0fd; color: #5a6fd9; }
+  .class-type.lang { background: #fdf2ec; color: var(--accent2); }
+  .class-type.sci { background: #edfaf5; color: var(--accent3); }
 
   .section-title {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text2);
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
     text-transform: uppercase;
+    font-weight: 600;
   }
 
-  /* LOG MODAL */
+  /* MODAL */
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
+    background: rgba(44,49,66,0.4);
     z-index: 200;
     display: flex;
     align-items: flex-end;
@@ -298,7 +326,7 @@
   .modal-overlay.open .modal { transform: translateY(0); }
 
   .modal-handle {
-    width: 40px;
+    width: 36px;
     height: 4px;
     background: var(--border);
     border-radius: 2px;
@@ -307,8 +335,9 @@
 
   .modal-title {
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 16px;
+    color: var(--text);
   }
 
   textarea {
@@ -326,9 +355,9 @@
     transition: border-color 0.2s;
   }
 
-  textarea:focus { border-color: var(--accent); }
+  textarea:focus { border-color: var(--accent); background: white; }
 
-  .option-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .option-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 
   .option-btn {
     padding: 6px 14px;
@@ -339,24 +368,25 @@
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
+    font-weight: 500;
   }
 
   .option-btn.selected {
     border-color: var(--accent);
-    background: rgba(124,111,247,0.15);
+    background: #eef5fd;
     color: var(--accent);
   }
 
   .option-btn.selected.orange {
     border-color: var(--accent2);
-    background: rgba(247,162,111,0.15);
+    background: #fdf2ec;
     color: var(--accent2);
   }
 
   .option-btn.selected.green {
     border-color: var(--accent3);
-    background: rgba(111,247,196,0.15);
+    background: #edfaf5;
     color: var(--accent3);
   }
 
@@ -365,58 +395,64 @@
     color: var(--text2);
     margin-bottom: 6px;
     display: block;
+    font-weight: 600;
+    letter-spacing: 0.3px;
   }
 
   .time-options { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 
-  /* TASKS SCREEN */
+  /* TASKS */
   .task-item {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
+    padding: 11px 14px;
+    margin-bottom: 6px;
     display: flex;
     align-items: flex-start;
     gap: 12px;
   }
 
   .task-check {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     border: 2px solid var(--border);
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 1px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 11px;
+    color: white;
   }
 
   .task-check:hover { border-color: var(--accent); }
 
   .task-info { flex: 1; }
 
-  .task-subject { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .task-subject { font-size: 13px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
 
   .task-meta {
     font-size: 11px;
     color: var(--text2);
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    align-items: center;
   }
 
   .task-tag {
-    padding: 1px 8px;
+    padding: 2px 8px;
     border-radius: 20px;
     font-size: 10px;
+    font-weight: 500;
   }
 
-  .tag-review { background: rgba(124,111,247,0.15); color: var(--accent); }
-  .tag-audio { background: rgba(247,162,111,0.15); color: var(--accent2); }
-  .tag-urgent { background: rgba(247,111,111,0.15); color: var(--danger); }
+  .tag-review { background: #eef0fd; color: #5a6fd9; }
+  .tag-audio { background: #fdf2ec; color: var(--accent2); }
+  .tag-urgent { background: #edfaf5; color: var(--accent3); }
 
   .empty-state {
     text-align: center;
@@ -447,10 +483,97 @@
     margin-bottom: 12px;
   }
 
-  .msg-error { background: rgba(247,111,111,0.1); color: var(--danger); border: 1px solid rgba(247,111,111,0.3); }
-  .msg-success { background: rgba(111,247,162,0.1); color: var(--success); border: 1px solid rgba(111,247,162,0.3); }
+  .msg-error { background: #fdf0f0; color: var(--danger); border: 1px solid #f5cccc; }
+  .msg-success { background: #f0faf5; color: var(--success); border: 1px solid #b8e8cc; }
 
   .hidden { display: none !important; }
+
+  /* SCHEDULE LABELS */
+  .cal-schedule-label {
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--accent);
+    color: white;
+    width: 100%;
+    text-align: left;
+    margin-top: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+  }
+
+  .cal-day-inner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 2px;
+  }
+
+  /* TYPE SELECTOR */
+  .type-select-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(44,49,66,0.4);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .type-select-overlay.open { opacity: 1; pointer-events: all; }
+  .type-select-box {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 20px;
+    width: 280px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  }
+  .type-select-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text);
+    text-align: center;
+  }
+  .type-select-btns {
+    display: flex;
+    gap: 10px;
+  }
+  .type-select-btn {
+    flex: 1;
+    padding: 14px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    transition: all 0.15s;
+  }
+  .type-select-btn:hover { border-color: var(--accent); background: #eef5fd; color: var(--accent); }
+  .type-select-btn svg { width: 28px; height: 28px; }
+  .type-select-cancel {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    border: none;
+    background: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+  }
 
   /* CALENDAR */
   .cal-month-nav {
@@ -459,27 +582,30 @@
     justify-content: space-between;
     margin-bottom: 14px;
   }
-  .cal-month-nav h2 { font-size: 15px; font-weight: 500; }
+  .cal-month-nav h2 { font-size: 15px; font-weight: 600; }
   .cal-nav-btn {
-    background: var(--surface2);
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
-    color: var(--text);
+    color: var(--text2);
     padding: 6px 14px;
     cursor: pointer;
     font-size: 13px;
+    transition: all 0.15s;
   }
+  .cal-nav-btn:hover { background: var(--surface2); }
   .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 3px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
   .cal-dow {
     text-align: center;
     font-size: 10px;
     color: var(--text2);
     padding: 4px 0;
+    font-weight: 600;
   }
   .cal-day {
     aspect-ratio: 1;
@@ -496,8 +622,8 @@
     transition: all 0.15s;
     position: relative;
   }
-  .cal-day:hover { border-color: var(--accent); }
-  .cal-day.today { border-color: var(--accent); background: rgba(124,111,247,0.1); }
+  .cal-day:hover { border-color: var(--accent); background: #f0f6fd; }
+  .cal-day.today { border-color: var(--accent); background: #eef5fd; font-weight: 700; }
   .cal-day.other-month { opacity: 0.3; }
   .cal-day.weekend { color: var(--text2); }
   .cal-dots {
@@ -519,23 +645,24 @@
   .cal-day-tasks {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
+    border-radius: 12px;
+    padding: 14px;
     margin-bottom: 8px;
   }
   .cal-day-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--accent);
-    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
   }
   .cal-task-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 0;
+    padding: 6px 0;
     border-bottom: 1px solid var(--border);
     font-size: 12px;
+    color: var(--text);
   }
   .cal-task-row:last-child { border-bottom: none; }
 
@@ -547,6 +674,7 @@
     color: var(--text2);
     margin-bottom: 16px;
     line-height: 1.8;
+    border: 1px solid var(--border);
   }
 </style>
 </head>
@@ -563,14 +691,7 @@
     </div>
   </header>
 
-  <nav>
-    <button class="active" onclick="showTab('today')">今日</button>
-    <button onclick="showTab('calendar')">カレンダー</button>
-    <button onclick="showTab('tasks')">タスク</button>
-    <button onclick="showTab('setup')">設定</button>
-  </nav>
-
-  <div class="content">
+  <div class="content" id="mainContent">
 
     <!-- TODAY TAB -->
     <div id="tab-today">
@@ -586,8 +707,11 @@
       <div class="section-title">授業一覧（タップで記録）</div>
       <div class="class-list" id="classList"></div>
 
-      <div class="section-title">今日の復習タスク</div>
-      <div id="todayTasks"></div>
+      <div class="today-header" style="margin-top:20px">
+        <div class="section-title" style="margin-bottom:0">今日のタスク</div>
+        <button class="cal-nav-btn" onclick="openTodoModal(todayStr())" style="font-size:11px">＋ 追加</button>
+      </div>
+      <div id="allTasks"></div>
 
       <div class="section-title" style="margin-top:20px">自習記録</div>
       <div class="class-list" id="selfStudyList"></div>
@@ -597,15 +721,6 @@
     <!-- CALENDAR TAB -->
     <div id="tab-calendar" class="hidden">
       <div id="calendarView"></div>
-    </div>
-
-    <!-- TASKS TAB -->
-    <div id="tab-tasks" class="hidden">
-      <div class="today-header">
-        <h2>今日のタスク</h2>
-        <button class="cal-nav-btn" onclick="openTodoModal(todayStr())" style="font-size:11px">＋ 追加</button>
-      </div>
-      <div id="allTasks"></div>
     </div>
 
     <!-- SETUP TAB -->
@@ -661,6 +776,63 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="type-select-overlay" id="confirmDeleteOverlay" onclick="closeConfirmDelete()">
+  <div class="type-select-box">
+    <div class="type-select-title" style="color:var(--danger)">削除の確認</div>
+    <p id="confirmDeleteMsg" style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:16px;line-height:1.6"></p>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeConfirmDelete()" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-family:'Noto Sans JP',sans-serif;font-size:13px;cursor:pointer;color:var(--text2)">キャンセル</button>
+      <button onclick="executeDelete()" style="flex:1;padding:11px;border-radius:10px;border:none;background:var(--danger);color:white;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:500;cursor:pointer">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- TYPE SELECT -->
+<div class="type-select-overlay" id="typeSelectOverlay" onclick="closeTypeSelect(event)">
+  <div class="type-select-box">
+    <div class="type-select-title" id="typeSelectTitle">追加する種類を選択</div>
+    <div class="type-select-btns">
+      <button class="type-select-btn" onclick="openScheduleFromTypeSelect()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="18"/><line x1="10" y1="16" x2="14" y2="16"/>
+        </svg>
+        スケジュール
+      </button>
+      <button class="type-select-btn" onclick="openTodoFromTypeSelect()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+        TODO
+      </button>
+    </div>
+    <button class="type-select-cancel" onclick="closeTypeSelectOverlay()">キャンセル</button>
+  </div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="scheduleModalOverlay" onclick="closeScheduleModalOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="scheduleModalTitle">スケジュールを追加</div>
+    <div id="scheduleModalMsg"></div>
+    <label class="form-label">タイトル</label>
+    <input type="text" id="scheduleTitle" placeholder="例：模試、面談、自習など" style="margin-bottom:14px">
+    <label class="form-label">メモ（任意）</label>
+    <textarea id="scheduleMemo" placeholder="メモを入力" style="margin-bottom:14px"></textarea>
+    <label class="form-label">色</label>
+    <div class="option-group" id="scheduleColorGroup" style="margin-bottom:16px">
+      <button class="option-btn selected" onclick="selectScheduleColor('#4a90d9', this)" style="background:#eef5fd;border-color:#4a90d9;color:#4a90d9">青</button>
+      <button class="option-btn" onclick="selectScheduleColor('#e8855a', this)">オレンジ</button>
+      <button class="option-btn" onclick="selectScheduleColor('#4ab89a', this)">緑</button>
+      <button class="option-btn" onclick="selectScheduleColor('#9b6fd9', this)">紫</button>
+      <button class="option-btn" onclick="selectScheduleColor('#d95f5f', this)">赤</button>
+    </div>
+    <button class="btn btn-primary" onclick="saveSchedule()">追加する</button>
+    <button class="btn btn-secondary" onclick="closeScheduleModal()">キャンセル</button>
   </div>
 </div>
 
@@ -890,6 +1062,7 @@ function init() {
   ensurePrepTasksSaved();
   updateHeader();
   renderToday();
+  renderAllTasks();
   checkConnection();
   // Notionから最新タスクを取得して再描画
   if (settings.apiKey && settings.taskDbId) {
@@ -946,7 +1119,7 @@ function renderToday() {
     }).join('');
   }
 
-  renderTodayTasks();
+  renderAllTasks();
   renderSelfStudyList();
 }
 
@@ -980,72 +1153,7 @@ function getTomorrowPrep() {
     }));
 }
 
-function renderTodayTasks() {
-  const container = document.getElementById('todayTasks');
-  const today = selectedDate || todayStr();
-  const allTodayTasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]')
-    .filter(t => t.date === today && t.status === '未完');
-
-  // 復習タスク（予習でないもの）と予習タスクを分離
-  const reviewTasks = allTodayTasks.filter(t => !t.isPrep);
-  const prepTasks = allTodayTasks.filter(t => t.isPrep);
-
-  if (allTodayTasks.length === 0) {
-    container.innerHTML = '<div style="color:var(--text2);font-size:12px;padding:8px 0">今日のタスクはありません</div>';
-    return;
-  }
-
-  const reviewHtml = reviewTasks.length ? `
-    <div class="section-title" style="margin-bottom:6px">復習</div>
-    ${reviewTasks.map(t => `
-      <div class="task-item">
-        <div class="task-check" onclick="completeTaskSimple('${t.id}')"></div>
-        <div class="task-info">
-          <div class="task-subject">${t.subject}</div>
-          <div class="task-meta">
-            <span class="task-tag ${t.type === '音読' ? 'tag-audio' : 'tag-review'}">${t.type}</span>
-            <span>${t.estimatedMin ? t.estimatedMin + '分' : ''}</span>
-          </div>
-        </div>
-      </div>
-    `).join('')}` : '';
-
-  const prepHtml = prepTasks.length ? `
-    <div class="section-title" style="margin-top:12px;margin-bottom:6px">明日の予習</div>
-    ${prepTasks.map(t => `
-      <div class="task-item" style="border-color:rgba(247,162,111,0.3)">
-        <div class="task-check" onclick="completeTaskSimple('${t.id}')" style="border-color:var(--accent2)"></div>
-        <div class="task-info">
-          <div class="task-subject">${t.subject}</div>
-          <div class="task-meta">
-            <span class="task-tag tag-audio">${t.type}</span>
-          </div>
-        </div>
-      </div>
-    `).join('')}` : '';
-
-  container.innerHTML = reviewHtml + prepHtml;
-}
-
-// ===== LOG MODAL =====
-function openLog(idx, name, key) {
-  currentClass = { idx, name, key };
-  selectedPattern = '不要';
-  selectedTime = 15;
-  document.getElementById('modalTitle').textContent = name;
-  document.getElementById('logMemo').value = '';
-  document.getElementById('modalMsg').innerHTML = '';
-
-  // reset buttons
-  document.querySelectorAll('.option-group .option-btn').forEach((b, i) => {
-    b.className = 'option-btn' + (i === 0 ? ' selected green' : '');
-  });
-  document.querySelectorAll('.time-options .option-btn').forEach((b, i) => {
-    b.className = 'option-btn' + (i === 2 ? ' selected' : '');
-  });
-
-  document.getElementById('modalOverlay').classList.add('open');
-}
+function renderTodayTasks() { renderAllTasks(); }
 
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
@@ -1273,7 +1381,7 @@ async function completeTaskSimple(id) {
   localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
   if (task.notionId) await updateTaskInNotion(task.notionId, task.status);
   renderAllTasks();
-  renderTodayTasks();
+  renderAllTasks();
 }
 
 async function openTaskStatus(id) {
@@ -1305,7 +1413,7 @@ async function openTaskStatus(id) {
 
   localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
   renderAllTasks();
-  renderTodayTasks();
+  renderAllTasks();
 }
 
 // ===== SETTINGS =====
@@ -1363,36 +1471,21 @@ let calMonth = new Date().getMonth();
 function renderCalendar() {
   const container = document.getElementById('calendarView');
   const tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
+  const schedules = JSON.parse(localStorage.getItem('fukushu_schedules') || '[]');
 
-  // タスクを日付でグループ化
+  // タスクを日付でグループ化（予習除く）
   const tasksByDate = {};
-  tasks.filter(t => t.status === '未完').forEach(t => {
+  tasks.filter(t => t.status === '未完' && !t.isPrep).forEach(t => {
     if (!tasksByDate[t.date]) tasksByDate[t.date] = [];
     tasksByDate[t.date].push(t);
   });
 
-  // 予習タスクも追加（今月分・平日のみ）
-  const noPrep = ['情報', 'LHR'];
-  const d = new Date(calYear, calMonth, 1);
-  while (d.getMonth() === calMonth) {
-    const dow = d.getDay();
-    // 土日はスキップ
-    if (dow !== 0 && dow !== 6) {
-      const nextDay = new Date(d);
-      nextDay.setDate(nextDay.getDate() + 1);
-      while (nextDay.getDay() === 0 || nextDay.getDay() === 6) nextDay.setDate(nextDay.getDate() + 1);
-      const nextDow = nextDay.getDay();
-      const classes = TIMETABLE[nextDow] || [];
-      const prepDate = dateToStr(d);
-      classes.filter(c => !noPrep.includes(c.name)).forEach(c => {
-        if (!tasksByDate[prepDate]) tasksByDate[prepDate] = [];
-        if (!tasksByDate[prepDate].find(t => t.subject === c.name && t.type === '予習')) {
-          tasksByDate[prepDate].push({ subject: c.name, type: '予習', status: '未完', isPrep: true });
-        }
-      });
-    }
-    d.setDate(d.getDate() + 1);
-  }
+  // スケジュールを日付でグループ化
+  const schedulesByDate = {};
+  schedules.forEach(s => {
+    if (!schedulesByDate[s.date]) schedulesByDate[s.date] = [];
+    schedulesByDate[s.date].push(s);
+  });
 
   const firstDay = new Date(calYear, calMonth, 1);
   const lastDay = new Date(calYear, calMonth + 1, 0);
@@ -1408,21 +1501,19 @@ function renderCalendar() {
       <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
     </div>
     <div class="cal-grid">
-      <div class="cal-dow" style="color:#f76f6f">日</div>
+      <div class="cal-dow" style="color:#d95f5f">日</div>
       <div class="cal-dow">月</div>
       <div class="cal-dow">火</div>
       <div class="cal-dow">水</div>
       <div class="cal-dow">木</div>
       <div class="cal-dow">金</div>
-      <div class="cal-dow" style="color:#6f9ff7">土</div>
+      <div class="cal-dow" style="color:#4a90d9">土</div>
   `;
 
-  // 月初の空白
   for (let i = 0; i < firstDay.getDay(); i++) {
     html += `<div class="cal-day other-month"></div>`;
   }
 
-  // 日付
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const date = new Date(calYear, calMonth, d);
     const dateStr = dateToStr(date);
@@ -1430,21 +1521,28 @@ function renderCalendar() {
     const dow = date.getDay();
     const isWeekend = dow === 0 || dow === 6;
     const dayTasks = tasksByDate[dateStr] || [];
+    const daySchedules = schedulesByDate[dateStr] || [];
 
     const reviewCount = dayTasks.filter(t => t.type === '白紙再現').length;
     const audioCount = dayTasks.filter(t => t.type === '音読').length;
-    const prepCount = dayTasks.filter(t => t.type === '予習').length;
 
     let dots = '';
-    for (let i = 0; i < Math.min(reviewCount, 3); i++) dots += `<div class="cal-dot review"></div>`;
-    for (let i = 0; i < Math.min(audioCount, 3); i++) dots += `<div class="cal-dot audio"></div>`;
-    for (let i = 0; i < Math.min(prepCount, 3); i++) dots += `<div class="cal-dot prep"></div>`;
+    for (let i = 0; i < Math.min(reviewCount, 2); i++) dots += `<div class="cal-dot review"></div>`;
+    for (let i = 0; i < Math.min(audioCount, 2); i++) dots += `<div class="cal-dot audio"></div>`;
+
+    // スケジュールラベル（最大2件）
+    const scheduleLabels = daySchedules.slice(0, 2).map(s =>
+      `<div class="cal-schedule-label" style="background:${s.color || 'var(--accent)'}">${s.title}</div>`
+    ).join('');
 
     html += `
       <div class="cal-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}"
            onclick="showDayTasks('${dateStr}')">
-        <span>${d}</span>
-        <div class="cal-dots">${dots}</div>
+        <div class="cal-day-inner">
+          <span style="font-size:12px;margin-bottom:1px">${d}</span>
+          ${scheduleLabels}
+          ${dots ? `<div class="cal-dots" style="margin-top:2px">${dots}</div>` : ''}
+        </div>
       </div>
     `;
   }
@@ -1456,57 +1554,101 @@ function renderCalendar() {
     <div style="display:flex;gap:12px;margin-bottom:16px;font-size:11px;color:var(--text2)">
       <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:4px"></span>白紙再現</span>
       <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent2);margin-right:4px"></span>音読</span>
-      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent3);margin-right:4px"></span>予習</span>
     </div>
   `;
 
-  // 今日のタスク詳細をデフォルト表示
   html += `<div id="dayTaskDetail"></div>`;
 
   container.innerHTML = html;
   showDayTasks(todayStr2);
 }
 
+let currentDayTasksDate = null;
+
 function showDayTasks(dateStr) {
+  currentDayTasksDate = dateStr;
   const tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]')
-    .filter(t => t.date === dateStr && t.status === '未完');
+    .filter(t => t.date === dateStr && t.status === '未完' && !t.isPrep);
+  const schedules = JSON.parse(localStorage.getItem('fukushu_schedules') || '[]')
+    .filter(s => s.date === dateStr);
 
-  // 予習タスク
-  const d = new Date(dateStr);
-  const nextDay = new Date(d);
-  nextDay.setDate(nextDay.getDate() + 1);
-  while (nextDay.getDay() === 0 || nextDay.getDay() === 6) nextDay.setDate(nextDay.getDate() + 1);
-  const nextDow = nextDay.getDay();
-  const noPrep = ['情報', 'LHR'];
-  const prepTasks = (TIMETABLE[nextDow] || [])
-    .filter(c => !noPrep.includes(c.name))
-    .map(c => ({ subject: c.name, type: '予習' }));
-
-  const allTasks = [...tasks, ...prepTasks];
   const container = document.getElementById('dayTaskDetail');
   if (!container) return;
 
-  // タイムゾーンずれ防止：文字列から直接パース
   const [y, m, dd] = dateStr.split('-').map(Number);
   const dateObj = new Date(y, m - 1, dd);
   const label = `${dateObj.getMonth()+1}/${dateObj.getDate()}（${DAYS[dateObj.getDay()]}）`;
 
-  // allTasksが0でも下でまとめて描画するのでreturnしない
+  const scheduleHtml = schedules.length ? schedules.map(s => `
+    <div class="cal-task-row" style="align-items:center">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.color || 'var(--accent)'};flex-shrink:0"></span>
+      <span style="font-weight:500">${s.title}</span>
+      ${s.memo ? `<span style="color:var(--text2);font-size:11px">${s.memo}</span>` : ''}
+      <button onclick="confirmDelete('schedule','${s.id}','${s.title.replace(/'/g, '')}')" style="margin-left:auto;background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer">削除</button>
+    </div>
+  `).join('') : '';
+
+  const taskHtml = tasks.length ? tasks.map(t => `
+    <div class="cal-task-row">
+      <span class="task-tag ${t.type === '音読' ? 'tag-audio' : 'tag-review'}">${t.type}</span>
+      <span>${t.subject}</span>
+      <button onclick="confirmDelete('task','${t.id}','${t.subject.replace(/'/g, '')}')" style="margin-left:auto;background:none;border:none;color:var(--text2);font-size:11px;cursor:pointer">削除</button>
+    </div>
+  `).join('') : '';
+
+  const isEmpty = !schedules.length && !tasks.length;
 
   container.innerHTML = `
     <div class="cal-day-tasks">
       <div class="cal-day-title" style="display:flex;align-items:center;justify-content:space-between">
-        <span>${label}のタスク</span>
-        <button class="cal-nav-btn" onclick="openTodoModal('${dateStr}')" style="font-size:11px;padding:4px 10px">＋ TODO追加</button>
+        <span>${label}</span>
+        <button class="cal-nav-btn" onclick="openTypeSelect('${dateStr}')" style="font-size:18px;padding:2px 10px;line-height:1">＋</button>
       </div>
-      ${allTasks.length === 0 ? '<div style="color:var(--text2);font-size:12px;margin-top:8px">タスクなし</div>' : allTasks.map(t => `
-        <div class="cal-task-row">
-          <span class="task-tag ${t.type === '音読' ? 'tag-audio' : t.type === '予習' ? 'tag-urgent' : 'tag-review'}">${t.type}</span>
-          <span>${t.subject}</span>
-        </div>
-      `).join('')}
+      ${isEmpty ? '<div style="color:var(--text2);font-size:12px;margin-top:8px">予定・タスクなし</div>' : ''}
+      ${scheduleHtml}
+      ${taskHtml}
     </div>
   `;
+}
+
+// 確認ダイアログ用
+let pendingDelete = null;
+
+function confirmDelete(type, id, label) {
+  pendingDelete = { type, id };
+  const overlay = document.getElementById('confirmDeleteOverlay');
+  document.getElementById('confirmDeleteMsg').textContent = `「${label}」を削除しますか？`;
+  overlay.classList.add('open');
+}
+
+function executeDelete() {
+  if (!pendingDelete) return;
+  const { type, id } = pendingDelete;
+  if (type === 'schedule') {
+    let schedules = JSON.parse(localStorage.getItem('fukushu_schedules') || '[]');
+    schedules = schedules.filter(s => s.id !== id);
+    localStorage.setItem('fukushu_schedules', JSON.stringify(schedules));
+  } else if (type === 'task') {
+    let tasks = JSON.parse(localStorage.getItem('fukushu_tasks') || '[]');
+    tasks = tasks.filter(t => t.id !== id);
+    localStorage.setItem('fukushu_tasks', JSON.stringify(tasks));
+  }
+  pendingDelete = null;
+  closeConfirmDelete();
+  renderCalendar();
+  if (currentDayTasksDate) showDayTasks(currentDayTasksDate);
+}
+
+function closeConfirmDelete() {
+  document.getElementById('confirmDeleteOverlay').classList.remove('open');
+}
+
+function deleteSchedule(id) {
+  let schedules = JSON.parse(localStorage.getItem('fukushu_schedules') || '[]');
+  schedules = schedules.filter(s => s.id !== id);
+  localStorage.setItem('fukushu_schedules', JSON.stringify(schedules));
+  renderCalendar();
+  if (currentDayTasksDate) showDayTasks(currentDayTasksDate);
 }
 
 function changeMonth(dir) {
@@ -1518,15 +1660,32 @@ function changeMonth(dir) {
 
 // ===== TABS =====
 function showTab(tab) {
-  ['today', 'calendar', 'tasks', 'setup'].forEach(t => {
+  ['today', 'calendar', 'setup'].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
   });
-  document.querySelectorAll('nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['today','calendar','tasks','setup'][i] === tab);
+  ['today', 'calendar', 'setup'].forEach(t => {
+    document.getElementById(`nav-${t}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'tasks') renderAllTasks();
+  if (tab === 'today') renderAllTasks();
   if (tab === 'calendar') renderCalendar();
 }
+
+// スクロールでナビ表示/非表示
+let lastScrollY = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  const content = document.getElementById('mainContent');
+  const nav = document.getElementById('bottomNav');
+  if (!content || !nav) return;
+  content.addEventListener('scroll', () => {
+    const currentY = content.scrollTop;
+    if (currentY > lastScrollY && currentY > 40) {
+      nav.classList.add('hidden-nav');
+    } else {
+      nav.classList.remove('hidden-nav');
+    }
+    lastScrollY = currentY;
+  });
+});
 
 // ===== SELF STUDY =====
 let selfStudyPattern = '不要';
@@ -1646,6 +1805,91 @@ function renderSelfStudyList() {
   `).join('');
 }
 
+// ===== TYPE SELECT =====
+let typeSelectDate = null;
+let scheduleColor = '#4a90d9';
+
+function openTypeSelect(dateStr) {
+  typeSelectDate = dateStr;
+  const [y, m, dd] = dateStr.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, dd);
+  document.getElementById('typeSelectTitle').textContent =
+    `${dateObj.getMonth()+1}/${dateObj.getDate()}（${DAYS[dateObj.getDay()]}）に追加`;
+  document.getElementById('typeSelectOverlay').classList.add('open');
+}
+
+function closeTypeSelectOverlay() {
+  document.getElementById('typeSelectOverlay').classList.remove('open');
+}
+
+function closeTypeSelect(e) {
+  if (e.target === document.getElementById('typeSelectOverlay')) closeTypeSelectOverlay();
+}
+
+function openScheduleFromTypeSelect() {
+  closeTypeSelectOverlay();
+  const [y, m, dd] = typeSelectDate.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, dd);
+  document.getElementById('scheduleModalTitle').textContent =
+    `${dateObj.getMonth()+1}/${dateObj.getDate()}（${DAYS[dateObj.getDay()]}）のスケジュール`;
+  document.getElementById('scheduleTitle').value = '';
+  document.getElementById('scheduleMemo').value = '';
+  document.getElementById('scheduleModalMsg').innerHTML = '';
+  scheduleColor = '#4a90d9';
+  document.querySelectorAll('#scheduleColorGroup .option-btn').forEach((b, i) => {
+    b.className = 'option-btn' + (i === 0 ? ' selected' : '');
+  });
+  document.getElementById('scheduleModalOverlay').classList.add('open');
+}
+
+function openTodoFromTypeSelect() {
+  closeTypeSelectOverlay();
+  openTodoModal(typeSelectDate);
+}
+
+function closeScheduleModal() {
+  document.getElementById('scheduleModalOverlay').classList.remove('open');
+}
+
+function closeScheduleModalOutside(e) {
+  if (e.target === document.getElementById('scheduleModalOverlay')) closeScheduleModal();
+}
+
+function selectScheduleColor(color, btn) {
+  scheduleColor = color;
+  document.querySelectorAll('#scheduleColorGroup .option-btn').forEach(b => {
+    b.className = 'option-btn';
+    b.style.background = '';
+    b.style.borderColor = '';
+    b.style.color = '';
+  });
+  btn.className = 'option-btn selected';
+  btn.style.background = color + '22';
+  btn.style.borderColor = color;
+  btn.style.color = color;
+}
+
+function saveSchedule() {
+  const title = document.getElementById('scheduleTitle').value.trim();
+  if (!title) {
+    document.getElementById('scheduleModalMsg').innerHTML = '<div class="msg msg-error">タイトルを入力してください</div>';
+    return;
+  }
+  const memo = document.getElementById('scheduleMemo').value.trim();
+  const schedules = JSON.parse(localStorage.getItem('fukushu_schedules') || '[]');
+  schedules.push({
+    id: `sch_${Date.now()}`,
+    title,
+    memo,
+    date: typeSelectDate,
+    color: scheduleColor,
+  });
+  localStorage.setItem('fukushu_schedules', JSON.stringify(schedules));
+  closeScheduleModal();
+  renderCalendar();
+  if (currentDayTasksDate) showDayTasks(currentDayTasksDate);
+}
+
 // ===== DATE PICKER =====
 let selectedDate = null;
 let selectedTodoType = '白紙再現';
@@ -1726,5 +1970,27 @@ function todayStr() {
 
 init();
 </script>
+
+<!-- BOTTOM NAV -->
+<nav id="bottomNav">
+  <button class="active" onclick="showTab('today')" id="nav-today">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+    <span>今日</span>
+  </button>
+  <button onclick="showTab('calendar')" id="nav-calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/>
+    </svg>
+    <span>カレンダー</span>
+  </button>
+  <button onclick="showTab('setup')" id="nav-setup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+    <span>設定</span>
+  </button>
+</nav>
 </body>
 </html>
